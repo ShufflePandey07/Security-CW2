@@ -1,120 +1,32 @@
-import { motion } from "framer-motion";
-import React, { useState } from "react";
 import {
-  FaEnvelope,
-  FaEye,
-  FaEyeSlash,
-  FaGoogle,
-  FaLock,
-} from "react-icons/fa";
+  Email as EmailIcon,
+  Lock as LockIcon,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
+import {
+  Box,
+  Button,
+  Container,
+  IconButton,
+  InputAdornment,
+  Link as MuiLink,
+  Paper,
+  TextField,
+  Typography,
+} from "@mui/material";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { animated, useSpring } from "react-spring";
 import { toast } from "react-toastify";
-import styled from "styled-components";
 import { loginUserApi } from "../../Apis/api";
-
-const BackgroundContainer = styled.div`
-  width: 100%;
-  height: 100vh;
-  background: linear-gradient(135deg, #6e8efb, #a777e3);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const LoginCard = styled(motion.div)`
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 3rem;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-`;
-
-const StyledInput = styled(animated.div)`
-  position: relative;
-  margin-bottom: 1.5rem;
-
-  input {
-    width: 100%;
-    padding: 1rem 1rem 1rem 3rem;
-    border: none;
-    border-radius: 50px;
-    background: rgba(255, 255, 255, 0.9);
-    font-size: 1rem;
-    transition: all 0.3s ease;
-
-    &:focus {
-      outline: none;
-      box-shadow: 0 0 0 2px #a777e3;
-    }
-  }
-
-  svg {
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #6e8efb;
-  }
-`;
-
-const PasswordToggle = styled.button`
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #6e8efb;
-`;
-
-const StyledButton = styled(motion.button)`
-  width: 100%;
-  padding: 1rem;
-  border: none;
-  border-radius: 50px;
-  background: linear-gradient(135deg, #6e8efb, #a777e3);
-  color: white;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: linear-gradient(135deg, #a777e3, #6e8efb);
-  }
-`;
-
-const GoogleButton = styled(StyledButton)`
-  background: white;
-  color: #333;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 1rem;
-
-  &:hover {
-    background: #f1f1f1;
-  }
-`;
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const inputSpring = useSpring({
-    from: { opacity: 0, transform: "translateY(20px)" },
-    to: { opacity: 1, transform: "translateY(0px)" },
-    config: { tension: 300, friction: 10 },
-  });
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const handleSubmit = (e) => {
+    e.preventDefault();
     const data = { email, password };
 
     loginUserApi(data)
@@ -130,92 +42,150 @@ const Login = () => {
         }
       })
       .catch((err) => {
-        const message = err.response?.data?.message || "Something wentt wrong";
+        const message = err.response?.data?.message || "Something went wrong";
         toast.error(message);
       });
   };
 
+  const handleGoogleLogin = () => {
+    window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`;
+  };
+
   return (
-    <BackgroundContainer>
-      <LoginCard
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h2
-          style={{
-            textAlign: "center",
-            color: "#6e8efb",
-            marginBottom: "2rem",
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background: `linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0)), 
+        url('https://wallpapers.com/images/featured/guitar-pictures-rm7sapdj9gdi6nef.jpg')`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        display: "flex",
+        alignItems: "center",
+        py: 4,
+      }}
+    >
+      <Container maxWidth="sm">
+        <Paper
+          elevation={24}
+          sx={{
+            p: { xs: 3, sm: 6 },
+            backdropFilter: "blur(10px)",
+            background: "rgba(255, 255, 255, 0.9)",
+            borderRadius: 4,
+            border: "1px solid rgba(255, 255, 255, 0.2)",
           }}
         >
-          Welcome Back
-        </h2>
-        <form onSubmit={handleSubmit}>
-          <StyledInput style={inputSpring}>
-            <FaEnvelope />
-            <input
+          <Typography
+            variant="h4"
+            component="h1"
+            align="center"
+            sx={{
+              mb: 4,
+              fontWeight: "bold",
+              background: "linear-gradient(45deg, #f50057, #ff4081)",
+              backgroundClip: "text",
+              textFillColor: "transparent",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            Welcome Back
+          </Typography>
+
+          <form onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              required
+              margin="normal"
               type="email"
-              placeholder="Email Address"
+              label="Email Address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <EmailIcon color="primary" />
+                  </InputAdornment>
+                ),
+              }}
             />
-          </StyledInput>
-          <StyledInput style={inputSpring}>
-            <FaLock />
-            <input
+
+            <TextField
+              fullWidth
+              required
+              margin="normal"
               type={showPassword ? "text" : "password"}
-              placeholder="Password"
+              label="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockIcon color="primary" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
-            <PasswordToggle
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
+
+            <Button
+              fullWidth
+              type="submit"
+              variant="contained"
+              sx={{
+                mt: 3,
+                mb: 2,
+                py: 1.5,
+                background: "linear-gradient(45deg, #f50057, #ff4081)",
+                "&:hover": {
+                  background: "linear-gradient(45deg, #ff4081, #f50057)",
+                },
+              }}
             >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </PasswordToggle>
-          </StyledInput>
-          <StyledButton
-            type="submit"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Log In
-          </StyledButton>
-          <GoogleButton
-            as="button"
-            onClick={() =>
-              (window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`)
-            }
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <FaGoogle />
-            Log in with Google
-          </GoogleButton>
-        </form>
-        <div style={{ textAlign: "center", marginTop: "1rem" }}>
-          <Link
-            to="/forgot_password"
-            style={{ color: "#6e8efb", textDecoration: "none" }}
-          >
-            Forgot password?
-          </Link>
-        </div>
-        <div style={{ textAlign: "center", marginTop: "1rem" }}>
-          Don't have an account?{" "}
-          <Link
-            to="/register"
-            style={{ color: "#a777e3", textDecoration: "none" }}
-          >
-            Sign up
-          </Link>
-        </div>
-      </LoginCard>
-    </BackgroundContainer>
+              Log In
+            </Button>
+          </form>
+
+          <Box sx={{ textAlign: "center", mt: 2 }}>
+            <MuiLink
+              component={Link}
+              to="/forgot_password"
+              sx={{
+                color: "#f50057",
+                textDecoration: "none",
+                "&:hover": { textDecoration: "underline" },
+              }}
+            >
+              Forgot password?
+            </MuiLink>
+          </Box>
+
+          <Box sx={{ textAlign: "center", mt: 2 }}>
+            Don't have an account?{" "}
+            <MuiLink
+              component={Link}
+              to="/register"
+              sx={{
+                color: "#f50057",
+                textDecoration: "none",
+                "&:hover": { textDecoration: "underline" },
+              }}
+            >
+              Sign up
+            </MuiLink>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
   );
 };
 

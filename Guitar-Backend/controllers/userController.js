@@ -1,711 +1,227 @@
-// const userModel = require("../models/userModel");
-// const bcrypt = require("bcrypt");
-// const jwt = require("jsonwebtoken");
-// const sendOtp = require("../service/sendOtp");
-
-// /**
-//  * @desc    Register a new user
-//  * @route   POST /api/users/register
-//  * @access  Public
-//  */
-// const createUser = async (req, res) => {
-//   try {
-//     const { fullName, email, phone, password } = req.body;
-
-//     // Input validation
-//     if (!fullName || !email || !phone || !password) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "All fields are required!",
-//       });
-//     }
-
-//     // Email format validation
-//     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-//     if (!emailRegex.test(email)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Please provide a valid email address",
-//       });
-//     }
-
-//     // Phone number validation (assuming 10 digits)
-//     const phoneRegex = /^\d{10}$/;
-//     if (!phoneRegex.test(phone)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Please provide a valid 10-digit phone number",
-//       });
-//     }
-
-//     // Check if user already exists
-//     const existingUser = await userModel.findOne({
-//       $or: [{ email }, { phone }],
-//     });
-
-//     if (existingUser) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "User with this email or phone already exists!",
-//       });
-//     }
-
-//     // Hash password
-//     const salt = await bcrypt.genSalt(10);
-//     const hashedPassword = await bcrypt.hash(password, salt);
-
-//     // Create new user
-//     const newUser = new userModel({
-//       fullname: fullName,
-//       email: email.toLowerCase(),
-//       phone: phone,
-//       password: hashedPassword,
-//     });
-
-//     await newUser.save();
-
-//     res.status(201).json({
-//       success: true,
-//       message: "User registered successfully!",
-//     });
-//   } catch (error) {
-//     console.error("Create user error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal Server Error!",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// /**
-//  * @desc    Login user
-//  * @route   POST /api/users/login
-//  * @access  Public
-//  */
-// const loginUser = async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     // Input validation
-//     if (!email || !password) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Please provide email and password!",
-//       });
-//     }
-
-//     // Find user
-//     const user = await userModel.findOne({ email: email.toLowerCase() });
-//     if (!user) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid credentials",
-//       });
-//     }
-
-//     // Check password
-//     const passwordCorrect = await bcrypt.compare(password, user.password);
-//     if (!passwordCorrect) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid credentials",
-//       });
-//     }
-
-//     // Generate JWT token
-//     const token = jwt.sign(
-//       {
-//         id: user._id,
-//         isAdmin: user.role === "admin",
-//       },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "24h" }
-//     );
-
-//     // Remove password from user object
-//     const userWithoutPassword = {
-//       _id: user._id,
-//       fullname: user.fullname,
-//       email: user.email,
-//       phone: user.phone,
-//       role: user.role,
-//     };
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Logged in successfully!",
-//       token: token,
-//       user: userWithoutPassword,
-//     });
-//   } catch (error) {
-//     console.error("Login error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal Server Error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// /**
-//  * @desc    Forgot password - Send OTP
-//  * @route   POST /api/users/forgot-password
-//  * @access  Public
-//  */
-// const forgetPassword = async (req, res) => {
-//   try {
-//     const { phoneNumber } = req.body;
-
-//     if (!phoneNumber) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Please provide phone number",
-//       });
-//     }
-
-//     const user = await userModel.findOne({ phone: phoneNumber });
-//     if (!user) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "No user found with this phone number",
-//       });
-//     }
-
-//     // Generate 6-digit OTP
-//     const randomOTP = Math.floor(100000 + Math.random() * 900000);
-
-//     // Save OTP to user document
-//     user.resetPasswordOTP = randomOTP;
-//     user.resetPasswordExpires = Date.now() + 600000; // 10 minutes
-//     await user.save();
-
-//     // Send OTP using the sendOtp service
-//     await sendOtp(phoneNumber, randomOTP);
-
-//     res.status(200).json({
-//       success: true,
-//       message: "OTP sent successfully",
-//     });
-//   } catch (error) {
-//     console.error("Forget password error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal Server Error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// /**
-//  * @desc    Reset password with OTP
-//  * @route   POST /api/users/reset-password
-//  * @access  Public
-//  */
-// const resetPassword = async (req, res) => {
-//   try {
-//     const { otp, phoneNumber, password } = req.body;
-
-//     // Input validation
-//     if (!otp || !phoneNumber || !password) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Please provide all required fields",
-//       });
-//     }
-
-//     // Password strength validation
-//     if (password.length < 6) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Password must be at least 6 characters long",
-//       });
-//     }
-
-//     const user = await userModel.findOne({ phone: phoneNumber });
-//     if (!user) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "User not found",
-//       });
-//     }
-
-//     // Verify OTP
-//     const otpToInteger = parseInt(otp);
-//     if (user.resetPasswordOTP !== otpToInteger) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid OTP",
-//       });
-//     }
-
-//     // Check OTP expiration
-//     if (user.resetPasswordExpires < Date.now()) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "OTP has expired",
-//       });
-//     }
-
-//     // Hash new password
-//     const salt = await bcrypt.genSalt(10);
-//     const hashedPassword = await bcrypt.hash(password, salt);
-
-//     // Update user password and clear OTP fields
-//     user.password = hashedPassword;
-//     user.resetPasswordOTP = null;
-//     user.resetPasswordExpires = null;
-//     await user.save();
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Password reset successful",
-//     });
-//   } catch (error) {
-//     console.error("Reset password error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal Server Error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// /**
-//  * @desc    Get single user profile
-//  * @route   GET /api/users/profile
-//  * @access  Private
-//  */
-// const getSingleUser = async (req, res) => {
-//   try {
-//     const user = await userModel.findById(req.user.id).select("-password");
-//     if (!user) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "User not found",
-//       });
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       user: user,
-//     });
-//   } catch (error) {
-//     console.error("Get user error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal Server Error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// /**
-//  * @desc    Get all users (Admin only)
-//  * @route   GET /api/users
-//  * @access  Private/Admin
-//  */
-// const getAllUser = async (req, res) => {
-//   try {
-//     const users = await userModel.find().select("-password");
-//     res.status(200).json({
-//       success: true,
-//       count: users.length,
-//       users: users,
-//     });
-//   } catch (error) {
-//     console.error("Get all users error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal Server Error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// /**
-//  * @desc    Update user profile
-//  * @route   PUT /api/users/profile
-//  * @access  Private
-//  */
-// const updateProfile = async (req, res) => {
-//   try {
-//     const { fullname, email, phone, currentPassword, newPassword } = req.body;
-
-//     // Find user
-//     const user = await userModel.findById(req.user.id);
-//     if (!user) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "User not found",
-//       });
-//     }
-
-//     // Validate email format if provided
-//     if (email) {
-//       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-//       if (!emailRegex.test(email)) {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Please provide a valid email address",
-//         });
-//       }
-//     }
-
-//     // Validate phone format if provided
-//     if (phone) {
-//       const phoneRegex = /^\d{10}$/;
-//       if (!phoneRegex.test(phone)) {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Please provide a valid 10-digit phone number",
-//         });
-//       }
-//     }
-
-//     // Check if email is already in use by another user
-//     if (email && email !== user.email) {
-//       const emailExists = await userModel.findOne({
-//         email: email.toLowerCase(),
-//       });
-//       if (emailExists) {
-//         return res.status(400).json({
-//           success: false,
-//           message: "Email is already in use",
-//         });
-//       }
-//     }
-
-//     // Update user fields
-//     user.fullname = fullname || user.fullname;
-//     user.email = email ? email.toLowerCase() : user.email;
-//     user.phone = phone || user.phone;
-
-//     await user.save();
-
-//     // Remove password from response
-//     const userResponse = {
-//       _id: user._id,
-//       fullname: user.fullname,
-//       email: user.email,
-//       phone: user.phone,
-//       role: user.role,
-//     };
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Profile updated successfully",
-//       user: userResponse,
-//     });
-//   } catch (error) {
-//     console.error("Update profile error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal Server Error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// /**
-//  * @desc    Generate new token for user
-//  * @route   POST /api/users/token
-//  * @access  Public
-//  */
-// const getToken = async (req, res) => {
-//   try {
-//     const { id } = req.body;
-
-//     if (!id) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "User ID is required",
-//       });
-//     }
-
-//     const user = await userModel.findById(id);
-//     if (!user) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "User not found",
-//       });
-//     }
-
-//     const token = jwt.sign(
-//       {
-//         id: user._id,
-//         isAdmin: user.role === "admin",
-//       },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "24h" }
-//     );
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Token generated successfully",
-//       token: token,
-//     });
-//   } catch (error) {
-//     console.error("Get token error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal Server Error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// module.exports = {
-//   createUser,
-//   loginUser,
-//   forgetPassword,
-//   resetPassword,
-//   getSingleUser,
-//   getAllUser,
-//   updateProfile,
-//   getToken,
-// };
-
 const userModel = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const sendOtp = require("../service/sendOtp");
 
-// Password validation helper function
-const isValidPassword = (password) => {
-  const passwordRegex = /^(?=.*[A-Z])(?=.*[@#$])(?=.*\d).{8,}$/;
-  return passwordRegex.test(password);
+// Password validation function
+const isPasswordValid = (password) => {
+  if (password.length < 8) return false;
+  if (!/[A-Z]/.test(password)) return false;
+  if (!/[0-9]/.test(password)) return false;
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) return false;
+  return true;
 };
 
-/**
- * @desc    Register a new user
- * @route   POST /api/users/register
- * @access  Public
- */
+// Check if account is frozen
+const isAccountFrozen = (user) => {
+  if (!user.loginAttempts || user.loginAttempts < 5) return false;
+  if (!user.lastFailedLogin) return false;
+
+  const freezeTime = 1 * 60 * 1000; // 5 minutes in milliseconds
+  const timeSinceLastAttempt = Date.now() - user.lastFailedLogin;
+  return timeSinceLastAttempt < freezeTime;
+};
+
+// Reset login attempts
+const resetLoginAttempts = async (user) => {
+  user.loginAttempts = 0;
+  user.lastFailedLogin = null;
+  await user.save();
+};
+
+// Increment login attempts
+const incrementLoginAttempts = async (user) => {
+  user.loginAttempts = (user.loginAttempts || 0) + 1;
+  user.lastFailedLogin = Date.now();
+  await user.save();
+};
+
 const createUser = async (req, res) => {
-  try {
-    const { fullName, email, phone, password } = req.body;
+  console.log(req.body);
 
-    // Input validation
-    if (!fullName || !email || !phone || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields are required!",
-      });
-    }
+  const { fullName, email, phone, password } = req.body;
 
-    // Password validation
-    if (!isValidPassword(password)) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Password must be at least 8 characters long and contain at least one uppercase letter, one special character (@, #, $), and one number",
-      });
-    }
+  if (!fullName || !email || !phone || !password) {
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields are required!" });
+  }
 
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide a valid email address",
-      });
-    }
-
-    // Phone number validation (assuming 10 digits)
-    const phoneRegex = /^\d{10}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide a valid 10-digit phone number",
-      });
-    }
-
-    // Check if user already exists
-    const existingUser = await userModel.findOne({
-      $or: [{ email }, { phone }],
+  if (!isPasswordValid(password)) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Password must contain at least 8 characters, one uppercase letter, one number, and one special character!",
     });
+  }
 
+  try {
+    const existingUser = await userModel.findOne({ email: email });
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "User with this email or phone already exists!",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "User Already Exists!" });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
     const newUser = new userModel({
       fullname: fullName,
-      email: email.toLowerCase(),
+      email: email,
       phone: phone,
       password: hashedPassword,
+      loginAttempts: 0,
+      lastFailedLogin: null,
     });
 
     await newUser.save();
 
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully!",
-    });
+    res.status(201).json({ success: true, message: "User Created!" });
   } catch (error) {
-    console.error("Create user error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal Server Error!",
-      error: error.message,
-    });
+    console.log(error);
+    res.status(500).json({ success: false, message: "Internal Server Error!" });
   }
 };
 
-/**
- * @desc    Login user
- * @route   POST /api/users/login
- * @access  Public
- */
 const loginUser = async (req, res) => {
+  console.log(req.body);
+
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Please enter all fields!" });
+  }
+
   try {
-    const { email, password } = req.body;
-
-    // Input validation
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide email and password!",
-      });
-    }
-
-    // Find user
-    const user = await userModel.findOne({ email: email.toLowerCase() });
+    const user = await userModel.findOne({ email: email });
     if (!user) {
-      return res.status(400).json({
+      return res
+        .status(400)
+        .json({ success: false, message: "User doesn't exist" });
+    }
+
+    // Check if account is frozen
+    if (isAccountFrozen(user)) {
+      const timeLeft = Math.ceil(
+        (5 * 60 * 1000 - (Date.now() - user.lastFailedLogin)) / 1000 / 60
+      );
+      return res.status(403).json({
         success: false,
-        message: "Invalid credentials",
+        message: `Account is temporarily frozen due to multiple failed attempts. Please try again in ${timeLeft} minutes.`,
       });
     }
 
-    // Check password
     const passwordCorrect = await bcrypt.compare(password, user.password);
     if (!passwordCorrect) {
+      await incrementLoginAttempts(user);
+
+      // Check if this attempt should freeze the account
+      if (user.loginAttempts >= 5) {
+        return res.status(403).json({
+          success: false,
+          message:
+            "Account frozen for 5 minutes due to multiple failed login attempts.",
+        });
+      }
+
       return res.status(400).json({
         success: false,
-        message: "Invalid credentials",
+        message: `Password is incorrect. ${
+          5 - user.loginAttempts
+        } attempts remaining before account freeze.`,
       });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        id: user._id,
-        isAdmin: user.role === "admin",
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
+    // Successful login - reset login attempts
+    await resetLoginAttempts(user);
+
+    const token = await jwt.sign(
+      { id: user._id, isAdmin: user.role === "admin" },
+      process.env.JWT_SECRET
     );
 
-    // Remove password from user object
-    const userWithoutPassword = {
-      _id: user._id,
-      fullname: user.fullname,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-    };
-
-    res.status(200).json({
+    res.status(201).json({
       success: true,
-      message: "Logged in successfully!",
+      message: "Logged in Successfully!",
       token: token,
-      user: userWithoutPassword,
+      user: user,
     });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
       success: false,
-      message: "Internal Server Error",
-      error: error.message,
+      message: "Internal Server error",
+      error: err,
     });
   }
 };
 
-/**
- * @desc    Forgot password - Send OTP
- * @route   POST /api/users/forgot-password
- * @access  Public
- */
 const forgetPassword = async (req, res) => {
+  console.log(req.body);
+
+  const { phoneNumber } = req.body;
+
+  if (!phoneNumber) {
+    return res.status(400).json({
+      success: false,
+      message: "Please enter your phone number",
+    });
+  }
   try {
-    const { phoneNumber } = req.body;
-
-    if (!phoneNumber) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide phone number",
-      });
-    }
-
     const user = await userModel.findOne({ phone: phoneNumber });
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: "No user found with this phone number",
+        message: "User not found",
       });
     }
 
-    // Generate 6-digit OTP
-    const randomOTP = Math.floor(100000 + Math.random() * 900000);
+    // Reset login attempts when requesting password reset
+    await resetLoginAttempts(user);
 
-    // Save OTP to user document
+    const randomOTP = Math.floor(100000 + Math.random() * 900000);
+    console.log(randomOTP);
+
     user.resetPasswordOTP = randomOTP;
     user.resetPasswordExpires = Date.now() + 600000; // 10 minutes
     await user.save();
 
-    // Send OTP using the sendOtp service
-    await sendOtp(phoneNumber, randomOTP);
-
     res.status(200).json({
       success: true,
-      message: "OTP sent successfully",
+      message: "OTP sent to your phone number",
     });
   } catch (error) {
-    console.error("Forget password error:", error);
-    res.status(500).json({
+    console.log(error);
+    return res.status(500).json({
       success: false,
-      message: "Internal Server Error",
-      error: error.message,
+      message: "Internal server error",
     });
   }
 };
 
-/**
- * @desc    Reset password with OTP
- * @route   POST /api/users/reset-password
- * @access  Public
- */
 const resetPassword = async (req, res) => {
+  console.log(req.body);
+  const { otp, phoneNumber, password } = req.body;
+
+  if (!otp || !phoneNumber || !password) {
+    return res.status(400).json({
+      success: false,
+      message: "Please enter all fields",
+    });
+  }
+
+  if (!isPasswordValid(password)) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Password must contain at least 8 characters, one uppercase letter, one number, and one special character!",
+    });
+  }
+
   try {
-    const { otp, phoneNumber, password } = req.body;
-
-    // Input validation
-    if (!otp || !phoneNumber || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide all required fields",
-      });
-    }
-
-    // Password validation
-    if (!isValidPassword(password)) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Password must be at least 8 characters long and contain at least one uppercase letter, one special character (@, #, $), and one number",
-      });
-    }
-
     const user = await userModel.findOne({ phone: phoneNumber });
     if (!user) {
       return res.status(400).json({
@@ -714,214 +230,111 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    // Verify OTP
     const otpToInteger = parseInt(otp);
+
     if (user.resetPasswordOTP !== otpToInteger) {
       return res.status(400).json({
         success: false,
-        message: "Invalid OTP",
+        message: "OTP is incorrect",
       });
     }
 
-    // Check OTP expiration
     if (user.resetPasswordExpires < Date.now()) {
       return res.status(400).json({
         success: false,
-        message: "OTP has expired",
+        message: "OTP is expired",
       });
     }
 
-    // Hash new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Update user password and clear OTP fields
     user.password = hashedPassword;
     user.resetPasswordOTP = null;
     user.resetPasswordExpires = null;
+
+    // Reset login attempts after successful password reset
+    await resetLoginAttempts(user);
+
     await user.save();
 
     res.status(200).json({
       success: true,
-      message: "Password reset successful",
+      message: "Password reset successfully",
     });
   } catch (error) {
-    console.error("Reset password error:", error);
-    res.status(500).json({
+    console.log(error);
+    return res.status(500).json({
       success: false,
-      message: "Internal Server Error",
-      error: error.message,
+      message: "Internal server error",
     });
   }
 };
 
-/**
- * @desc    Get single user profile
- * @route   GET /api/users/profile
- * @access  Private
- */
+// Rest of the code remains the same...
 const getSingleUser = async (req, res) => {
+  const id = req.user.id;
   try {
-    const user = await userModel.findById(req.user.id).select("-password");
+    const user = await userModel.findById(id);
     if (!user) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
         message: "User not found",
       });
     }
-
     res.status(200).json({
       success: true,
+      message: "User found",
       user: user,
     });
   } catch (error) {
-    console.error("Get user error:", error);
-    res.status(500).json({
+    console.log(error);
+    return res.status(500).json({
       success: false,
-      message: "Internal Server Error",
-      error: error.message,
+      message: "Internal server error",
+      error: error,
     });
   }
 };
 
-/**
- * @desc    Get all users (Admin only)
- * @route   GET /api/users
- * @access  Private/Admin
- */
 const getAllUser = async (req, res) => {
   try {
-    const users = await userModel.find().select("-password");
+    const allUsers = await userModel.find();
     res.status(200).json({
       success: true,
-      count: users.length,
-      users: users,
+      message: "All users",
+      users: allUsers,
     });
   } catch (error) {
-    console.error("Get all users error:", error);
-    res.status(500).json({
+    console.log(error);
+    return res.status(500).json({
       success: false,
-      message: "Internal Server Error",
-      error: error.message,
+      message: "Internal server error",
+      error: error,
     });
   }
 };
 
-/**
- * @desc    Update user profile
- * @route   PUT /api/users/profile
- * @access  Private
- */
 const updateProfile = async (req, res) => {
-  try {
-    const { fullname, email, phone, currentPassword, newPassword } = req.body;
+  const id = req.user.id;
+  const { fullname, email, phone, password } = req.body;
 
-    // Find user
-    const user = await userModel.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    // Validate email format if provided
-    if (email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({
-          success: false,
-          message: "Please provide a valid email address",
-        });
-      }
-    }
-
-    // Validate phone format if provided
-    if (phone) {
-      const phoneRegex = /^\d{10}$/;
-      if (!phoneRegex.test(phone)) {
-        return res.status(400).json({
-          success: false,
-          message: "Please provide a valid 10-digit phone number",
-        });
-      }
-    }
-
-    // Check if email is already in use by another user
-    if (email && email !== user.email) {
-      const emailExists = await userModel.findOne({
-        email: email.toLowerCase(),
-      });
-      if (emailExists) {
-        return res.status(400).json({
-          success: false,
-          message: "Email is already in use",
-        });
-      }
-    }
-
-    // If new password is provided, validate and update it
-    if (newPassword) {
-      if (!isValidPassword(newPassword)) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "New password must be at least 8 characters long and contain at least one uppercase letter, one special character (@, #, $), and one number",
-        });
-      }
-
-      // Hash new password
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(newPassword, salt);
-    }
-
-    // Update user fields
-    user.fullname = fullname || user.fullname;
-    user.email = email ? email.toLowerCase() : user.email;
-    user.phone = phone || user.phone;
-
-    await user.save();
-
-    // Remove password from response
-    const userResponse = {
-      _id: user._id,
-      fullname: user.fullname,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-    };
-
-    res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      user: userResponse,
-    });
-  } catch (error) {
-    console.error("Update profile error:", error);
-    res.status(500).json({
+  if (!fullname || !email || !phone) {
+    return res.status(400).json({
       success: false,
-      message: "Internal Server Error",
-      error: error.message,
+      message: "Please enter all fields",
     });
   }
-};
 
-/**
- * @desc    Generate new token for user
- * @route   POST /api/users/token
- * @access  Public
- */
-const getToken = async (req, res) => {
+  if (password && !isPasswordValid(password)) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Password must contain at least 8 characters, one uppercase letter, one number, and one special character!",
+    });
+  }
+
   try {
-    const { id } = req.body;
-
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID is required",
-      });
-    }
-
     const user = await userModel.findById(id);
     if (!user) {
       return res.status(404).json({
@@ -930,26 +343,59 @@ const getToken = async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      {
-        id: user._id,
-        isAdmin: user.role === "admin",
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
-    );
+    user.fullname = fullname;
+    user.email = email;
+    user.phone = phone;
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      user.password = hashedPassword;
+    }
+
+    await user.save();
 
     res.status(200).json({
       success: true,
-      message: "Token generated successfully",
+      message: "Profile updated successfully",
+      user: {
+        fullname: user.fullname,
+        email: user.email,
+        phone: user.phone,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const getToken = async (req, res) => {
+  const id = req.body.id;
+  try {
+    const user = await userModel.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    const token = await jwt.sign(
+      { id: user._id, isAdmin: user.role === "admin" },
+      process.env.JWT_SECRET
+    );
+    res.status(200).json({
+      success: true,
+      message: "Token generated",
       token: token,
     });
   } catch (error) {
-    console.error("Get token error:", error);
-    res.status(500).json({
+    console.log(error);
+    return res.status(500).json({
       success: false,
-      message: "Internal Server Error",
-      error: error.message,
+      message: "Internal server error",
     });
   }
 };

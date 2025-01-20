@@ -35,7 +35,7 @@ exports.favorite = async (req, res) => {
 
     await newFavorite.save();
 
-    res.status(201).json({ success: true, message: "Favorite toggled" });
+    res.status(201).json({ success: true, message: "Toggled to fav" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: error.message });
