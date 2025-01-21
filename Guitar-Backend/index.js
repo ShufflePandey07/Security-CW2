@@ -8,6 +8,9 @@ const acceptFormdata = require("express-fileupload");
 const cartRoutes = require("./routes/cartRoutes"); // Import cart routes
 const favouritesRoutes = require("./routes/favouritesRoutes"); // Import favourites routes
 const morgan = require("morgan");
+const fs = require("fs");
+const path = require("path");
+const https = require("https");
 
 // Load environment variables
 dotenv.config();
@@ -17,7 +20,7 @@ const app = express();
 
 // Configure CORS
 const corsOptions = {
-  origin: true,
+  origin: "https://localhost:3000/",
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -41,6 +44,11 @@ app.get("/test", (req, res) => {
   res.send("Test API is Working!...");
 });
 
+const options = {
+  key: fs.readFileSync(path.resolve(__dirname, "server.key")),
+  cert: fs.readFileSync(path.resolve(__dirname, "server.crt")),
+};
+
 // Define routes
 // Use cartRoutes for /api/cart endpoints
 app.use("/api/cart", cartRoutes);
@@ -53,12 +61,10 @@ app.use("/api/user", require("./routes/userRoutes"));
 app.use("/api/product", require("./routes/productRoutes"));
 app.use("/api/order", require("./routes/orderRoutes"));
 
-// Define port
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5500;
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}!`);
+https.createServer(options, app).listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
 
 module.exports = app;
