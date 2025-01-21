@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Creating backend config
 const Api = axios.create({
-  baseURL: "http://localhost:5000/",
+  baseURL: "https://localhost:5000/",
   withCredentials: true,
   headers: {
     "Content-Type": "multipart/form-data",
@@ -27,6 +27,10 @@ export const registerUserApi = (data) => Api.post("/api/user/create", data);
 
 // Login user
 export const loginUserApi = (data) => Api.post("/api/user/login", data);
+
+// OTP verification
+
+export const otpVerificationApi = (data) => Api.post("/api/user/otp", data);
 
 // create product API
 export const createProductApi = (data) => Api.post("/api/product/create", data);

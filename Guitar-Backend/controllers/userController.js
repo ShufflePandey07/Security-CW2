@@ -2,6 +2,7 @@ const userModel = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const sendOtp = require("../service/sendOtp");
+const nodemailer = require("nodemailer");
 
 // Password validation function
 const isPasswordValid = (password) => {
@@ -13,6 +14,7 @@ const isPasswordValid = (password) => {
 };
 
 // Check if account is frozen
+
 const isAccountFrozen = (user) => {
   if (!user.loginAttempts || user.loginAttempts < 5) return false;
   if (!user.lastFailedLogin) return false;
@@ -85,8 +87,6 @@ const createUser = async (req, res) => {
 };
 
 const loginUser = async (req, res) => {
-  console.log(req.body);
-
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -135,25 +135,91 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // Successful login - reset login attempts
-    await resetLoginAttempts(user);
+    // If credentials are correct, generate and send OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = Date.now() + 5 * 60 * 1000; // OTP expires in 5 minutes
 
+    user.googleOtpSecret = otp;
+    user.googleOtpExpires = otpExpires;
+    await user.save();
+
+    // Send OTP via email
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER, // Your email
+        pass: process.env.EMAIL_PASS, // Your email password
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Your OTP Code",
+      text: `Your OTP code is ${otp}. It is valid for 5 minutes.`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent successfully to your email. Please verify it.",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: err,
+    });
+  }
+};
+const verifyOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Email and OTP are required!" });
+  }
+
+  try {
+    const user = await userModel.findOne({ email: email });
+    if (!user) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User doesn't exist" });
+    }
+
+    // Check if OTP is valid and not expired
+    if (user.googleOtpSecret !== otp || user.googleOtpExpires < Date.now()) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid or expired OTP." });
+    }
+
+    // Clear OTP and expiry after verification
+    user.googleOtpSecret = null;
+    user.googleOtpExpires = null;
+    await user.save();
+
+    // Generate token for login
     const token = await jwt.sign(
       { id: user._id, isAdmin: user.role === "admin" },
       process.env.JWT_SECRET
     );
 
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: "Logged in Successfully!",
+      message: "OTP verified successfully. Logged in!",
       token: token,
       user: user,
     });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({
+    console.error(err);
+    res.status(500).json({
       success: false,
-      message: "Internal Server error",
+      message: "Error verifying OTP.",
       error: err,
     });
   }
@@ -403,6 +469,7 @@ const getToken = async (req, res) => {
 module.exports = {
   createUser,
   loginUser,
+  verifyOtp,
   forgetPassword,
   resetPassword,
   getSingleUser,

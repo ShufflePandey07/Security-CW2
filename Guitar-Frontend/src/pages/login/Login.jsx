@@ -7,7 +7,12 @@ import {
 import {
   Box,
   Button,
+  CircularProgress,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   InputAdornment,
   Link as MuiLink,
@@ -18,33 +23,63 @@ import {
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import { loginUserApi } from "../../Apis/api";
+import { loginUserApi, otpVerificationApi } from "../../Apis/api";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  // OTP related states
+  const [openOtpDialog, setOpenOtpDialog] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     const data = { email, password };
 
-    loginUserApi(data)
-      .then((res) => {
-        if (res.status === 201) {
-          toast.success(res.data.message);
-          localStorage.setItem("token", res.data.token);
-          localStorage.setItem("user", JSON.stringify(res.data.user));
-          setTimeout(() => {
-            window.location.href =
-              res.data.user.role === "admin" ? "/admin/dashboard" : "/";
-          }, 1000);
-        }
-      })
-      .catch((err) => {
-        const message = err.response?.data?.message || "Something went wrong";
-        toast.error(message);
-      });
+    try {
+      const res = await loginUserApi(data);
+      if (res.data.success) {
+        toast.success("Please verify OTP sent to your email");
+        setOpenOtpDialog(true);
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || "Something went wrong";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpVerification = async (e) => {
+    e.preventDefault();
+    setOtpLoading(true);
+
+    try {
+      const data = { email, otp };
+      const res = await otpVerificationApi(data);
+
+      if (res.status === 200) {
+        toast.success(res.data.message);
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        setOpenOtpDialog(false);
+
+        setTimeout(() => {
+          window.location.href =
+            res.data.user.role === "admin" ? "/admin/dashboard" : "/";
+        }, 1000);
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || "Invalid OTP";
+      toast.error(message);
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -141,6 +176,7 @@ const Login = () => {
               fullWidth
               type="submit"
               variant="contained"
+              disabled={loading}
               sx={{
                 mt: 3,
                 mb: 2,
@@ -151,7 +187,11 @@ const Login = () => {
                 },
               }}
             >
-              Log In
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Log In"
+              )}
             </Button>
           </form>
 
@@ -185,6 +225,63 @@ const Login = () => {
           </Box>
         </Paper>
       </Container>
+
+      {/* OTP Verification Dialog */}
+      <Dialog
+        open={openOtpDialog}
+        onClose={() => !otpLoading && setOpenOtpDialog(false)}
+      >
+        <DialogTitle sx={{ textAlign: "center", pb: 1 }}>
+          <Typography variant="h5" component="div" fontWeight="bold">
+            OTP Verification
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Please enter the OTP sent to your email
+          </Typography>
+        </DialogTitle>
+        <form onSubmit={handleOtpVerification}>
+          <DialogContent sx={{ pt: 1 }}>
+            <TextField
+              fullWidth
+              required
+              margin="normal"
+              label="Enter OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              inputProps={{
+                maxLength: 6,
+                style: {
+                  textAlign: "center",
+                  letterSpacing: "0.5em",
+                  fontSize: "1.5em",
+                },
+              }}
+              disabled={otpLoading}
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button
+              fullWidth
+              type="submit"
+              variant="contained"
+              disabled={otpLoading}
+              sx={{
+                py: 1.5,
+                background: "linear-gradient(45deg, #f50057, #ff4081)",
+                "&:hover": {
+                  background: "linear-gradient(45deg, #ff4081, #f50057)",
+                },
+              }}
+            >
+              {otpLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Verify OTP"
+              )}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
     </Box>
   );
 };

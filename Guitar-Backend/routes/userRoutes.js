@@ -4,6 +4,8 @@ const userController = require("../controllers/userController");
 
 router.post("/login", userController.loginUser);
 
+router.post("/otp", userController.verifyOtp)
+
 router.post("/create", userController.createUser);
 
 router.post("/forgot_password", userController.forgetPassword);

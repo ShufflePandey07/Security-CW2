@@ -49,6 +49,14 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    googleOtpSecret: {
+      type: String,
+      default: null,
+    },
+    googleOtpExpires: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
