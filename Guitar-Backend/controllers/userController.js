@@ -38,15 +38,41 @@ const incrementLoginAttempts = async (user) => {
   await user.save();
 };
 
+const axios = require("axios");
+
 const createUser = async (req, res) => {
   console.log(req.body);
 
-  const { fullName, email, phone, password } = req.body;
+  const { fullName, email, phone, password, captchaToken } = req.body;
 
-  if (!fullName || !email || !phone || !password) {
+  if (!fullName || !email || !phone || !password || !captchaToken) {
     return res
       .status(400)
       .json({ success: false, message: "All fields are required!" });
+  }
+
+  // Verify reCAPTCHA
+  try {
+    const captchaVerificationResponse = await axios.post(
+      `https://www.google.com/recaptcha/api/siteverify`,
+      null,
+      {
+        params: {
+          secret: process.env.RECAPTCHA_SECRET_KEY,
+          response: captchaToken,
+        },
+      }
+    );
+
+    if (!captchaVerificationResponse.data.success) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Captcha verification failed!" });
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Error verifying captcha", error });
   }
 
   if (!isPasswordValid(password)) {
@@ -87,12 +113,36 @@ const createUser = async (req, res) => {
 };
 
 const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, captchaToken } = req.body;
 
-  if (!email || !password) {
+  if (!email || !password || !captchaToken) {
     return res
       .status(400)
       .json({ success: false, message: "Please enter all fields!" });
+  }
+
+  // Verify reCAPTCHA
+  try {
+    const captchaVerificationResponse = await axios.post(
+      `https://www.google.com/recaptcha/api/siteverify`,
+      null,
+      {
+        params: {
+          secret: process.env.RECAPTCHA_SECRET_KEY,
+          response: captchaToken,
+        },
+      }
+    );
+
+    if (!captchaVerificationResponse.data.success) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Captcha verification failed!" });
+    }
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, message: "Error verifying captcha", error });
   }
 
   try {
@@ -174,6 +224,7 @@ const loginUser = async (req, res) => {
     });
   }
 };
+
 const verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
 

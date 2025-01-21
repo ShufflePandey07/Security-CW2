@@ -20,7 +20,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { loginUserApi, otpVerificationApi } from "../../Apis/api";
@@ -36,10 +37,25 @@ const Login = () => {
   const [otp, setOtp] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
 
+  // ReCAPTCHA ref
+  const recaptchaRef = useRef(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Get ReCAPTCHA token
+    const captchaToken = recaptchaRef.current.getValue();
+    if (!captchaToken) {
+      toast.error("Please complete the CAPTCHA verification");
+      return;
+    }
+
     setLoading(true);
-    const data = { email, password };
+    const data = {
+      email,
+      password,
+      captchaToken, // Include the token in the API request
+    };
 
     try {
       const res = await loginUserApi(data);
@@ -52,6 +68,8 @@ const Login = () => {
       toast.error(message);
     } finally {
       setLoading(false);
+      // Reset ReCAPTCHA after attempt
+      recaptchaRef.current.reset();
     }
   };
 
@@ -171,6 +189,14 @@ const Login = () => {
                 ),
               }}
             />
+
+            {/* Visible ReCAPTCHA */}
+            <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey="6LfpJ74qAAAAAE8hjbJ-AeYqlUpAFSyizUIxNeUq"
+              />
+            </Box>
 
             <Button
               fullWidth

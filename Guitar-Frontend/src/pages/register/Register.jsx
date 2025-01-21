@@ -10,6 +10,7 @@ import {
   Box,
   Button,
   Checkbox,
+  CircularProgress,
   Container,
   FormControlLabel,
   IconButton,
@@ -18,7 +19,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import ReCAPTCHA from "react-google-recaptcha";
 import { toast } from "react-toastify";
 import { registerUserApi } from "../../Apis/api";
 
@@ -30,8 +32,11 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const recaptchaRef = useRef(null);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
@@ -44,18 +49,34 @@ const Register = () => {
       return;
     }
 
-    const data = { fullName, email, phone, password };
+    // Verify ReCAPTCHA
+    const recaptchaToken = recaptchaRef.current.getValue();
+    if (!recaptchaToken) {
+      toast.error("Please complete the CAPTCHA verification");
+      return;
+    }
 
-    registerUserApi(data)
-      .then((res) => {
-        if (res.status === 201) {
-          toast.success(res.data.message);
-        }
-      })
-      .catch((err) => {
-        const message = err.response?.data?.message || "Something went wrong";
-        toast.error(message);
-      });
+    setLoading(true);
+    const data = {
+      fullName,
+      email,
+      phone,
+      password,
+      recaptchaToken,
+    };
+
+    try {
+      const res = await registerUserApi(data);
+      if (res.status === 201) {
+        toast.success(res.data.message);
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || "Something went wrong";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+      recaptchaRef.current.reset();
+    }
   };
 
   return (
@@ -216,10 +237,19 @@ const Register = () => {
               sx={{ mt: 1 }}
             />
 
+            {/* ReCAPTCHA */}
+            <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey="6LfpJ74qAAAAAE8hjbJ-AeYqlUpAFSyizUIxNeUq"
+              />
+            </Box>
+
             <Button
               fullWidth
               type="submit"
               variant="contained"
+              disabled={loading}
               sx={{
                 mt: 2,
                 mb: 1,
@@ -230,7 +260,11 @@ const Register = () => {
                 },
               }}
             >
-              Create Account
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Create Account"
+              )}
             </Button>
           </form>
         </Paper>
