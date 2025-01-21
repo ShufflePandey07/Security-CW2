@@ -12,6 +12,9 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 
+const xssClean = require("xss-clean");
+const mongoExpressSanitize = require("express-mongo-sanitize");
+
 // Load environment variables
 dotenv.config();
 
@@ -29,6 +32,9 @@ app.use(cors(corsOptions));
 app.use(morgan("dev"));
 // Express JSON configuration
 app.use(express.json());
+
+app.use(xssClean());
+app.use(mongoExpressSanitize());
 
 // Configure form data handling
 app.use(acceptFormdata());
