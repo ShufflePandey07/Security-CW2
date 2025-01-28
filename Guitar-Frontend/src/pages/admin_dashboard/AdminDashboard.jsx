@@ -35,6 +35,7 @@ import {
   Typography,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
+import DOMPurify from "dompurify";
 import React, { useEffect, useState } from "react";
 
 import {
@@ -108,10 +109,11 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
+    const sanitizedSearchTerm = DOMPurify.sanitize(searchTerm.toLowerCase());
     const results = gadgets.filter(
       (gadget) =>
-        gadget.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        gadget.productCategory.toLowerCase().includes(searchTerm.toLowerCase())
+        gadget.productName.toLowerCase().includes(sanitizedSearchTerm) ||
+        gadget.productCategory.toLowerCase().includes(sanitizedSearchTerm)
     );
     setFilteredGadgets(results);
   }, [searchTerm, gadgets]);
@@ -119,10 +121,10 @@ const AdminDashboard = () => {
   const handleAddGadget = async (e) => {
     e.preventDefault();
     const formData = new FormData();
-    formData.append("productName", name);
-    formData.append("productPrice", price);
-    formData.append("productCategory", category);
-    formData.append("productDescription", description);
+    formData.append("productName", DOMPurify.sanitize(name));
+    formData.append("productPrice", DOMPurify.sanitize(price));
+    formData.append("productCategory", DOMPurify.sanitize(category));
+    formData.append("productDescription", DOMPurify.sanitize(description));
     formData.append("productImage", imageFile);
 
     try {
@@ -139,10 +141,10 @@ const AdminDashboard = () => {
   const handleEditGadget = async (e) => {
     e.preventDefault();
     const formData = new FormData();
-    formData.append("productName", name);
-    formData.append("productPrice", price);
-    formData.append("productCategory", category);
-    formData.append("productDescription", description);
+    formData.append("productName", DOMPurify.sanitize(name));
+    formData.append("productPrice", DOMPurify.sanitize(price));
+    formData.append("productCategory", DOMPurify.sanitize(category));
+    formData.append("productDescription", DOMPurify.sanitize(description));
     if (imageFile) {
       formData.append("productImage", imageFile);
     }
@@ -159,9 +161,10 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteGadget = async (id) => {
+    const sanitizedId = DOMPurify.sanitize(id);
     if (window.confirm("Are you sure you want to delete this gadget?")) {
       try {
-        const res = await deleteProductApi(id);
+        const res = await deleteProductApi(sanitizedId);
         if (res.status === 201) {
           await fetchData();
         }
@@ -173,8 +176,10 @@ const AdminDashboard = () => {
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      const response = await updateOrderStatusApi(orderId, {
-        status: newStatus,
+      const sanitizedOrderId = DOMPurify.sanitize(orderId);
+      const sanitizedStatus = DOMPurify.sanitize(newStatus);
+      const response = await updateOrderStatusApi(sanitizedOrderId, {
+        status: sanitizedStatus,
       });
       if (response.status === 200) {
         await fetchData();
@@ -186,10 +191,10 @@ const AdminDashboard = () => {
 
   const openEditModal = (gadget) => {
     setCurrentGadget(gadget);
-    setName(gadget.productName);
-    setDescription(gadget.productDescription);
-    setPrice(gadget.productPrice);
-    setCategory(gadget.productCategory);
+    setName(DOMPurify.sanitize(gadget.productName));
+    setDescription(DOMPurify.sanitize(gadget.productDescription));
+    setPrice(DOMPurify.sanitize(gadget.productPrice.toString()));
+    setCategory(DOMPurify.sanitize(gadget.productCategory));
     setImageFile(null);
     setIsModalOpen(true);
   };
@@ -257,11 +262,15 @@ const AdminDashboard = () => {
                 <TableBody>
                   {filteredGadgets.map((gadget) => (
                     <TableRow key={gadget._id}>
-                      <TableCell>{gadget.productName}</TableCell>
-                      <TableCell>${gadget.productPrice}</TableCell>
+                      <TableCell>
+                        {DOMPurify.sanitize(gadget.productName)}
+                      </TableCell>
+                      <TableCell>
+                        ${DOMPurify.sanitize(gadget.productPrice.toString())}
+                      </TableCell>
                       <TableCell>
                         <Chip
-                          label={gadget.productCategory}
+                          label={DOMPurify.sanitize(gadget.productCategory)}
                           color="primary"
                           variant="outlined"
                         />
@@ -305,10 +314,10 @@ const AdminDashboard = () => {
                         }}
                       >
                         <Typography variant="subtitle1" fontWeight="bold">
-                          Order #{order._id.slice(-6)}
+                          Order #{DOMPurify.sanitize(order._id.slice(-6))}
                         </Typography>
                         <OrderStatus
-                          label={order.status}
+                          label={DOMPurify.sanitize(order.status)}
                           status={order.status}
                           size="small"
                         />
@@ -318,21 +327,22 @@ const AdminDashboard = () => {
                         color="text.secondary"
                         gutterBottom
                       >
-                        Customer: {order.userId?.fullname || "N/A"}
+                        Customer:{" "}
+                        {DOMPurify.sanitize(order.userId?.fullname || "N/A")}
                       </Typography>
                       <Typography
                         variant="body2"
                         color="text.secondary"
                         gutterBottom
                       >
-                        Total: Rs.{order.total.toFixed(2)}
+                        Total: Rs.{DOMPurify.sanitize(order.total.toFixed(2))}
                       </Typography>
                       <Typography
                         variant="body2"
                         color="text.secondary"
                         gutterBottom
                       >
-                        Payment: {order.paymentType}
+                        Payment: {DOMPurify.sanitize(order.paymentType)}
                       </Typography>
                       <FormControl fullWidth size="small" sx={{ mt: 2 }}>
                         <Select

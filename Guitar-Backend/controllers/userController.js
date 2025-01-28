@@ -1,8 +1,13 @@
+const DOMPurify = require("dompurify");
+const { JSDOM } = require("jsdom");
+const window = new JSDOM("").window;
+const purify = DOMPurify(window);
+
 const userModel = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const sendOtp = require("../service/sendOtp");
 const nodemailer = require("nodemailer");
+const axios = require("axios");
 
 // Password validation function
 const isPasswordValid = (password) => {
@@ -14,12 +19,11 @@ const isPasswordValid = (password) => {
 };
 
 // Check if account is frozen
-
 const isAccountFrozen = (user) => {
   if (!user.loginAttempts || user.loginAttempts < 5) return false;
   if (!user.lastFailedLogin) return false;
 
-  const freezeTime = 1 * 60 * 1000; // 5 minutes in milliseconds
+  const freezeTime = 5 * 60 * 1000; // 5 minutes in milliseconds
   const timeSinceLastAttempt = Date.now() - user.lastFailedLogin;
   return timeSinceLastAttempt < freezeTime;
 };
@@ -38,14 +42,27 @@ const incrementLoginAttempts = async (user) => {
   await user.save();
 };
 
-const axios = require("axios");
+// Sanitize input helper function
+const sanitizeInput = (input) => purify.sanitize(input);
 
+// Create User
 const createUser = async (req, res) => {
-  console.log(req.body);
-
   const { fullName, email, phone, password, captchaToken } = req.body;
 
-  if (!fullName || !email || !phone || !password || !captchaToken) {
+  // Sanitize inputs
+  const sanitizedFullName = sanitizeInput(fullName);
+  const sanitizedEmail = sanitizeInput(email);
+  const sanitizedPhone = sanitizeInput(phone);
+  const sanitizedPassword = sanitizeInput(password);
+  const sanitizedCaptchaToken = sanitizeInput(captchaToken);
+
+  if (
+    !sanitizedFullName ||
+    !sanitizedEmail ||
+    !sanitizedPhone ||
+    !sanitizedPassword ||
+    !sanitizedCaptchaToken
+  ) {
     return res
       .status(400)
       .json({ success: false, message: "All fields are required!" });
@@ -59,7 +76,7 @@ const createUser = async (req, res) => {
       {
         params: {
           secret: process.env.RECAPTCHA_SECRET_KEY,
-          response: captchaToken,
+          response: sanitizedCaptchaToken,
         },
       }
     );
@@ -75,7 +92,7 @@ const createUser = async (req, res) => {
       .json({ success: false, message: "Error verifying captcha", error });
   }
 
-  if (!isPasswordValid(password)) {
+  if (!isPasswordValid(sanitizedPassword)) {
     return res.status(400).json({
       success: false,
       message:
@@ -84,7 +101,7 @@ const createUser = async (req, res) => {
   }
 
   try {
-    const existingUser = await userModel.findOne({ email: email });
+    const existingUser = await userModel.findOne({ email: sanitizedEmail });
     if (existingUser) {
       return res
         .status(400)
@@ -92,12 +109,12 @@ const createUser = async (req, res) => {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(sanitizedPassword, salt);
 
     const newUser = new userModel({
-      fullname: fullName,
-      email: email,
-      phone: phone,
+      fullname: sanitizedFullName,
+      email: sanitizedEmail,
+      phone: sanitizedPhone,
       password: hashedPassword,
       loginAttempts: 0,
       lastFailedLogin: null,
@@ -112,10 +129,16 @@ const createUser = async (req, res) => {
   }
 };
 
+// Login User
 const loginUser = async (req, res) => {
   const { email, password, captchaToken } = req.body;
 
-  if (!email || !password || !captchaToken) {
+  // Sanitize inputs
+  const sanitizedEmail = sanitizeInput(email);
+  const sanitizedPassword = sanitizeInput(password);
+  const sanitizedCaptchaToken = sanitizeInput(captchaToken);
+
+  if (!sanitizedEmail || !sanitizedPassword || !sanitizedCaptchaToken) {
     return res
       .status(400)
       .json({ success: false, message: "Please enter all fields!" });
@@ -129,7 +152,7 @@ const loginUser = async (req, res) => {
       {
         params: {
           secret: process.env.RECAPTCHA_SECRET_KEY,
-          response: captchaToken,
+          response: sanitizedCaptchaToken,
         },
       }
     );
@@ -146,7 +169,7 @@ const loginUser = async (req, res) => {
   }
 
   try {
-    const user = await userModel.findOne({ email: email });
+    const user = await userModel.findOne({ email: sanitizedEmail });
     if (!user) {
       return res
         .status(400)
@@ -164,11 +187,13 @@ const loginUser = async (req, res) => {
       });
     }
 
-    const passwordCorrect = await bcrypt.compare(password, user.password);
+    const passwordCorrect = await bcrypt.compare(
+      sanitizedPassword,
+      user.password
+    );
     if (!passwordCorrect) {
       await incrementLoginAttempts(user);
 
-      // Check if this attempt should freeze the account
       if (user.loginAttempts >= 5) {
         return res.status(403).json({
           success: false,
@@ -185,26 +210,24 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // If credentials are correct, generate and send OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = Date.now() + 5 * 60 * 1000; // OTP expires in 5 minutes
+    const otpExpires = Date.now() + 5 * 60 * 1000;
 
     user.googleOtpSecret = otp;
     user.googleOtpExpires = otpExpires;
     await user.save();
 
-    // Send OTP via email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.EMAIL_USER, // Your email
-        pass: process.env.EMAIL_PASS, // Your email password
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: email,
+      to: sanitizedEmail,
       subject: "Your OTP Code",
       text: `Your OTP code is ${otp}. It is valid for 5 minutes.`,
     };
@@ -225,36 +248,41 @@ const loginUser = async (req, res) => {
   }
 };
 
+// Verify OTP
 const verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
 
-  if (!email || !otp) {
+  // Sanitize inputs
+  const sanitizedEmail = sanitizeInput(email);
+  const sanitizedOtp = sanitizeInput(otp);
+
+  if (!sanitizedEmail || !sanitizedOtp) {
     return res
       .status(400)
       .json({ success: false, message: "Email and OTP are required!" });
   }
 
   try {
-    const user = await userModel.findOne({ email: email });
+    const user = await userModel.findOne({ email: sanitizedEmail });
     if (!user) {
       return res
         .status(400)
         .json({ success: false, message: "User doesn't exist" });
     }
 
-    // Check if OTP is valid and not expired
-    if (user.googleOtpSecret !== otp || user.googleOtpExpires < Date.now()) {
+    if (
+      user.googleOtpSecret !== sanitizedOtp ||
+      user.googleOtpExpires < Date.now()
+    ) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid or expired OTP." });
     }
 
-    // Clear OTP and expiry after verification
     user.googleOtpSecret = null;
     user.googleOtpExpires = null;
     await user.save();
 
-    // Generate token for login
     const token = await jwt.sign(
       { id: user._id, isAdmin: user.role === "admin" },
       process.env.JWT_SECRET
@@ -276,19 +304,21 @@ const verifyOtp = async (req, res) => {
   }
 };
 
+// Forget Password
 const forgetPassword = async (req, res) => {
-  console.log(req.body);
-
   const { phoneNumber } = req.body;
 
-  if (!phoneNumber) {
+  const sanitizedPhoneNumber = sanitizeInput(phoneNumber);
+
+  if (!sanitizedPhoneNumber) {
     return res.status(400).json({
       success: false,
       message: "Please enter your phone number",
     });
   }
+
   try {
-    const user = await userModel.findOne({ phone: phoneNumber });
+    const user = await userModel.findOne({ phone: sanitizedPhoneNumber });
     if (!user) {
       return res.status(400).json({
         success: false,
@@ -296,14 +326,11 @@ const forgetPassword = async (req, res) => {
       });
     }
 
-    // Reset login attempts when requesting password reset
     await resetLoginAttempts(user);
 
     const randomOTP = Math.floor(100000 + Math.random() * 900000);
-    console.log(randomOTP);
-
     user.resetPasswordOTP = randomOTP;
-    user.resetPasswordExpires = Date.now() + 600000; // 10 minutes
+    user.resetPasswordExpires = Date.now() + 600000;
     await user.save();
 
     res.status(200).json({
@@ -311,7 +338,7 @@ const forgetPassword = async (req, res) => {
       message: "OTP sent to your phone number",
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -319,18 +346,22 @@ const forgetPassword = async (req, res) => {
   }
 };
 
+// Reset Password
 const resetPassword = async (req, res) => {
-  console.log(req.body);
   const { otp, phoneNumber, password } = req.body;
 
-  if (!otp || !phoneNumber || !password) {
+  const sanitizedOtp = sanitizeInput(otp);
+  const sanitizedPhoneNumber = sanitizeInput(phoneNumber);
+  const sanitizedPassword = sanitizeInput(password);
+
+  if (!sanitizedOtp || !sanitizedPhoneNumber || !sanitizedPassword) {
     return res.status(400).json({
       success: false,
       message: "Please enter all fields",
     });
   }
 
-  if (!isPasswordValid(password)) {
+  if (!isPasswordValid(sanitizedPassword)) {
     return res.status(400).json({
       success: false,
       message:
@@ -339,7 +370,7 @@ const resetPassword = async (req, res) => {
   }
 
   try {
-    const user = await userModel.findOne({ phone: phoneNumber });
+    const user = await userModel.findOne({ phone: sanitizedPhoneNumber });
     if (!user) {
       return res.status(400).json({
         success: false,
@@ -347,9 +378,7 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    const otpToInteger = parseInt(otp);
-
-    if (user.resetPasswordOTP !== otpToInteger) {
+    if (user.resetPasswordOTP !== parseInt(sanitizedOtp)) {
       return res.status(400).json({
         success: false,
         message: "OTP is incorrect",
@@ -364,15 +393,12 @@ const resetPassword = async (req, res) => {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(sanitizedPassword, salt);
 
     user.password = hashedPassword;
     user.resetPasswordOTP = null;
     user.resetPasswordExpires = null;
-
-    // Reset login attempts after successful password reset
     await resetLoginAttempts(user);
-
     await user.save();
 
     res.status(200).json({
@@ -380,7 +406,7 @@ const resetPassword = async (req, res) => {
       message: "Password reset successfully",
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -388,7 +414,7 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// Rest of the code remains the same...
+// Remaining Functions
 const getSingleUser = async (req, res) => {
   const id = req.user.id;
   try {
@@ -405,11 +431,10 @@ const getSingleUser = async (req, res) => {
       user: user,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error,
     });
   }
 };
@@ -423,11 +448,10 @@ const getAllUser = async (req, res) => {
       users: allUsers,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error,
     });
   }
 };
@@ -436,14 +460,19 @@ const updateProfile = async (req, res) => {
   const id = req.user.id;
   const { fullname, email, phone, password } = req.body;
 
-  if (!fullname || !email || !phone) {
+  const sanitizedFullName = sanitizeInput(fullname);
+  const sanitizedEmail = sanitizeInput(email);
+  const sanitizedPhone = sanitizeInput(phone);
+  const sanitizedPassword = password ? sanitizeInput(password) : null;
+
+  if (!sanitizedFullName || !sanitizedEmail || !sanitizedPhone) {
     return res.status(400).json({
       success: false,
       message: "Please enter all fields",
     });
   }
 
-  if (password && !isPasswordValid(password)) {
+  if (sanitizedPassword && !isPasswordValid(sanitizedPassword)) {
     return res.status(400).json({
       success: false,
       message:
@@ -460,12 +489,12 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    user.fullname = fullname;
-    user.email = email;
-    user.phone = phone;
-    if (password) {
+    user.fullname = sanitizedFullName;
+    user.email = sanitizedEmail;
+    user.phone = sanitizedPhone;
+    if (sanitizedPassword) {
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
+      const hashedPassword = await bcrypt.hash(sanitizedPassword, salt);
       user.password = hashedPassword;
     }
 
@@ -481,7 +510,7 @@ const updateProfile = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -490,7 +519,7 @@ const updateProfile = async (req, res) => {
 };
 
 const getToken = async (req, res) => {
-  const id = req.body.id;
+  const id = sanitizeInput(req.body.id);
   try {
     const user = await userModel.findById(id);
     if (!user) {
@@ -509,7 +538,7 @@ const getToken = async (req, res) => {
       token: token,
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
