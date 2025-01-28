@@ -62,7 +62,7 @@ const Register = () => {
       email,
       phone,
       password,
-      recaptchaToken,
+      captchaToken: recaptchaToken,
     };
 
     try {

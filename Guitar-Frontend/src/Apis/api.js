@@ -36,10 +36,10 @@ export const otpVerificationApi = (data) => Api.post("/api/user/otp", data);
 export const createProductApi = (data) => Api.post("/api/product/create", data);
 
 // get all products API
-export const getProductsApi = () => Api.get("/api/product/get_all");
+export const getProductsApi = () => Api.get("/api/product/get_all", config);
 
 // get single product API
-export const getProductApi = (id) => Api.get(`/api/product/get/${id}`);
+export const getProductApi = (id) => Api.get(`/api/product/get/${id}`, config);
 
 // update product API
 export const updateProductApi = (id, data) =>
