@@ -20,7 +20,6 @@ import Navbar from "./components/Navbar";
 import AboutUs from "./pages/about_us/AboutUs";
 import AdminDashboard from "./pages/admin_dashboard/AdminDashboard";
 import Cart from "./pages/cart_page/Cart";
-import ContactUs from "./pages/contact_us/ContactUs";
 import Favourites from "./pages/favourites_page/Favourites";
 import ForgotPassword from "./pages/forgot_password/ForgotPassword";
 import LandingPage from "./pages/guitar_landing_page/GuitarLandingPage";
@@ -123,7 +122,7 @@ const App = () => {
         <Route path="/landingpage" element={<LandingPage />} />
         <Route path="*" element={<div>404 Not Found</div>} />
         <Route path="/login" element={<Login />} />
-        <Route path="/contact" element={<ContactUs />} />
+
         <Route path="/orderlist" element={<OrderList />} />
         <Route path="/userdashboard" element={<Homepage />} />
       </Routes>

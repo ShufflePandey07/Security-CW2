@@ -20,6 +20,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import DOMPurify from "dompurify";
 import React, { useRef, useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import { Link } from "react-router-dom";
@@ -40,6 +41,10 @@ const Login = () => {
   // ReCAPTCHA ref
   const recaptchaRef = useRef(null);
 
+  const sanitizeInput = (input) => {
+    return DOMPurify.sanitize(input);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -52,8 +57,8 @@ const Login = () => {
 
     setLoading(true);
     const data = {
-      email,
-      password,
+      email: sanitizeInput(email), // Sanitize email
+      password: sanitizeInput(password), // Sanitize password
       captchaToken, // Include the token in the API request
     };
 
@@ -78,7 +83,10 @@ const Login = () => {
     setOtpLoading(true);
 
     try {
-      const data = { email, otp };
+      const data = {
+        email: sanitizeInput(email), // Sanitize email
+        otp: sanitizeInput(otp), // Sanitize OTP
+      };
       const res = await otpVerificationApi(data);
 
       if (res.status === 200) {
@@ -153,7 +161,7 @@ const Login = () => {
               type="email"
               label="Email Address"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setEmail(sanitizeInput(e.target.value))}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -170,7 +178,7 @@ const Login = () => {
               type={showPassword ? "text" : "password"}
               label="Password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(sanitizeInput(e.target.value))}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -273,7 +281,7 @@ const Login = () => {
               margin="normal"
               label="Enter OTP"
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={(e) => setOtp(sanitizeInput(e.target.value))}
               inputProps={{
                 maxLength: 6,
                 style: {

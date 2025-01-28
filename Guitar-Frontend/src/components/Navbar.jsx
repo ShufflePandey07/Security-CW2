@@ -123,20 +123,6 @@ const Navbar = () => {
             >
               About Us
             </Button>
-            <Button
-              component={NavLink}
-              to="/contact"
-              color="inherit"
-              sx={{
-                "&.active": {
-                  color: "primary.main",
-                  borderBottom: 2,
-                  borderColor: "primary.main",
-                },
-              }}
-            >
-              Contact Us
-            </Button>
           </Box>
 
           {/* User Actions */}

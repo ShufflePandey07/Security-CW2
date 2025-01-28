@@ -150,7 +150,11 @@ const authGuard = (req, res, next) => {
         success: false,
         message: "Token has expired",
       });
-    }
+    }/* The `if (error.name === "JsonWebTokenError")` condition in the code snippet is checking if the
+    error thrown during token verification is of type "JsonWebTokenError". This specific check is
+    used to handle cases where the error is related to issues with the JSON Web Token itself, such
+    as token format errors or invalid tokens. */
+    
 
     if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
