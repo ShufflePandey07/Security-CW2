@@ -1,3 +1,5 @@
+
+
 const Log = require("../models/logModel");
 const logRequest = async (req, res, next) => {
   const logEntry = new Log({
@@ -26,3 +28,5 @@ const logRequest = async (req, res, next) => {
 module.exports = {
   logRequest,
 };
+
+

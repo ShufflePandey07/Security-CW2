@@ -4,12 +4,13 @@ const express = require("express");
 const router = express.Router();
 const cartController = require("../controllers/cartController");
 const { authGuard } = require("../middleware/authGuard");
+const { logRequest } = require("../middleware/activityLog");
 
 // Route to add item to cart
 router.post("/add", authGuard, cartController.addToCart);
 
 // Route to get all cart items
-router.get("/all", authGuard, cartController.getAllCartItems);
+router.get("/all", authGuard, logRequest, cartController.getAllCartItems);
 
 // Route to delete item from cart
 router.delete("/delete/:id", cartController.deleteCartItem);

@@ -1,12 +1,11 @@
-
-
 const router = require("express").Router();
 const { authGuard } = require("../middleware/authGuard");
 const userController = require("../controllers/userController");
+const { logRequest } = require("../middleware/activityLog");
 
-router.post("/login", userController.loginUser);
+router.post("/login", logRequest, userController.loginUser);
 
-router.post("/otp", userController.verifyOtp)
+router.post("/otp", userController.verifyOtp);
 
 router.post("/create", userController.createUser);
 
@@ -22,6 +21,3 @@ router.get("/get_all_user", authGuard, userController.getAllUser);
 router.post("/getToken", userController.getToken);
 
 module.exports = router;
-
-
-

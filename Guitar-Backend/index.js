@@ -14,6 +14,8 @@ const https = require("https");
 
 const xssClean = require("xss-clean");
 const mongoExpressSanitize = require("express-mongo-sanitize");
+// const { limiter } = require("./controllers/userController");
+const { default: rateLimit } = require("express-rate-limit");
 
 // Load environment variables
 dotenv.config();
@@ -25,16 +27,28 @@ const app = express();
 const corsOptions = {
   origin: "https://localhost:3000",
   credentials: true,
+  methods: "GET,PUT,POST,DELETE",
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization, X-Requested-With",
+    "X-HTTP-Method-Override",
+    "Accept",
+  ],
   optionSuccessStatus: 200,
 };
-
 app.use(cors(corsOptions));
 app.use(morgan("dev"));
 // Express JSON configuration
 app.use(express.json());
-
 app.use(xssClean());
 app.use(mongoExpressSanitize());
+
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again after 10 minutes",
+});
+app.use(limiter);
 
 // Configure form data handling
 app.use(acceptFormdata());
@@ -57,6 +71,9 @@ const options = {
 };
 
 // Define routes
+
+app.use("/api/logs", require("./routes/logRoutes"));
+
 // Use cartRoutes for /api/cart endpoints
 app.use("/api/cart", cartRoutes);
 

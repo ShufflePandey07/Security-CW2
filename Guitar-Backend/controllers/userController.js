@@ -2,6 +2,7 @@ const DOMPurify = require("dompurify");
 const { JSDOM } = require("jsdom");
 const window = new JSDOM("").window;
 const purify = DOMPurify(window);
+const rateLimit = require("express-rate-limit");
 
 const userModel = require("../models/userModel");
 const bcrypt = require("bcrypt");
@@ -9,6 +10,15 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const axios = require("axios");
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests
+  message: {
+    success: false,
+    message:
+      "Too many requests from this IP, please try again after 15 minutes",
+  },
+});
 // Helper function to remove HTML and script tags
 const removeHtmlTags = (input) => {
   return input.replace(/<[^>]*>?/gm, "");
@@ -558,6 +568,7 @@ const getToken = async (req, res) => {
 };
 
 module.exports = {
+  limiter,
   createUser,
   loginUser,
   verifyOtp,

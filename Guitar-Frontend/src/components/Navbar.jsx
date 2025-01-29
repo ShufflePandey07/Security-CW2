@@ -53,6 +53,9 @@ const Navbar = () => {
     localStorage.removeItem("token");
     window.location.href = "/login";
   };
+  const handleActivityLog = () => {
+    window.location.href = "/activitylog";
+  };
 
   const menuItems = [
     { text: "Profile", icon: <Person />, link: "/profile" },
@@ -64,11 +67,22 @@ const Navbar = () => {
   // Admin view
   if (user && user.role === "admin") {
     return (
-      <Box sx={{ textAlign: "right", p: 2 }}>
-        <Button variant="outlined" color="inherit" onClick={handleLogout}>
-          Logout
-        </Button>
-      </Box>
+      <>
+        <Box sx={{ textAlign: "right", p: 2 }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={handleActivityLog}
+          >
+            Activity Log
+          </Button>
+        </Box>
+        <Box sx={{ textAlign: "right", p: 2 }}>
+          <Button variant="outlined" color="inherit" onClick={handleLogout}>
+            Logout
+          </Button>
+        </Box>
+      </>
     );
   }
 

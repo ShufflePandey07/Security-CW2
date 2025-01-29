@@ -91,12 +91,12 @@ const adminGuard = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Check if decoded token has necessary user information
-    if (!decoded || !decoded.userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid token payload",
-      });
-    }
+    // if (!decoded || !decoded.userId) {
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: "Invalid token payload",
+    //   });
+    // }
 
     req.user = decoded;
 

@@ -1,5 +1,21 @@
 import axios from "axios";
 
+// Fetch Activity Logs
+export const fetchActivityLogsApi = async () => {
+  const token = localStorage.getItem("token");
+  console.log(token);
+  const response = await axios.get(
+    "https://localhost:5000/api/logs/activity-logs",
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data.logs;
+};
+
 // Creating backend config
 const Api = axios.create({
   baseURL: "https://localhost:5000/",
@@ -121,3 +137,5 @@ export const updateOrderStatusApi = (id, data) =>
 // update carts status
 export const updateCartStatusApi = (data) =>
   Api.put(`/api/cart/status`, data, config);
+
+export const activitylogs = () => Api.get("/api/logs/activity-logs", config);

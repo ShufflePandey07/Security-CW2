@@ -16,6 +16,7 @@ import {
 } from "./Apis/api";
 import "./App.css";
 
+import ActivityLog from "./components/ActivityLog";
 import Navbar from "./components/Navbar";
 import AboutUs from "./pages/about_us/AboutUs";
 import AdminDashboard from "./pages/admin_dashboard/AdminDashboard";
@@ -105,6 +106,7 @@ const App = () => {
         />
         <Route element={<AdminRoutes />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/activitylog" element={<ActivityLog />} />
         </Route>
         <Route
           path="/cart"

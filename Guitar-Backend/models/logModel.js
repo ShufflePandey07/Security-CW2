@@ -1,5 +1,6 @@
+
+
 const mongoose = require("mongoose");
- 
 const logSchema = new mongoose.Schema(
   {
     username: String,
@@ -14,7 +15,6 @@ const logSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
- 
 const Log = mongoose.model("Log", logSchema);
- 
 module.exports = Log;
+

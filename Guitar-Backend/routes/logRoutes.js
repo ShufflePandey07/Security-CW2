@@ -1,28 +1,21 @@
+const express = require("express");
+const logRequest = require("../middleware/activityLog");
+const router = express.Router();
+
+// Protect the routes with authentication and apply logging middleware
+const { adminGuard } = require("../middleware/authGuard");
 const Log = require("../models/logModel");
-const logRequest = async (req, res, next) => {
-  const logEntry = new Log({
-    username: req.user
-      ? req.user.username || req.user.email || "Unknown User"
-      : "Unknown User",
-    url: req.originalUrl,
-    method: req.method,
-    role: req.user?.role || "User", // Dynamically set role
-    status: res.statusCode,
-    time: new Date(),
-    headers: req.headers, // Include headers
-    device: req.headers["user-agent"], // Include device information
-    ipAddress: req.ip, // Include IP address
-  });
 
+// Fetch user activity logs (Admin access only)
+router.get("/activity-logs", adminGuard, async (req, res) => {
   try {
-    await logEntry.save();
+    // Fetch logs from the database
+    const logs = await Log.find().sort({ createdAt: -1 }); // Most recent logs first
+    res.status(200).json({ success: true, logs });
   } catch (error) {
-    console.error("Error logging request:", error.message);
+    console.error("Error fetching activity logs:", error.message);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
+});
 
-  next();
-};
-
-module.exports = {
-  logRequest,
-};
+module.exports = router;
