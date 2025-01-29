@@ -1,3 +1,5 @@
+
+
 const router = require("express").Router();
 const { authGuard } = require("../middleware/authGuard");
 const userController = require("../controllers/userController");
@@ -20,3 +22,6 @@ router.get("/get_all_user", authGuard, userController.getAllUser);
 router.post("/getToken", userController.getToken);
 
 module.exports = router;
+
+
+

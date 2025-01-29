@@ -9,6 +9,17 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const axios = require("axios");
 
+// Helper function to remove HTML and script tags
+const removeHtmlTags = (input) => {
+  return input.replace(/<[^>]*>?/gm, "");
+};
+
+// Secure sanitization function
+const sanitizeInput = (input) => {
+  const sanitized = purify.sanitize(input);
+  return removeHtmlTags(sanitized);
+};
+
 // Password validation function
 const isPasswordValid = (password) => {
   if (password.length < 8) return false;
@@ -41,9 +52,6 @@ const incrementLoginAttempts = async (user) => {
   user.lastFailedLogin = Date.now();
   await user.save();
 };
-
-// Sanitize input helper function
-const sanitizeInput = (input) => purify.sanitize(input);
 
 // Create User
 const createUser = async (req, res) => {
@@ -285,7 +293,10 @@ const verifyOtp = async (req, res) => {
 
     const token = await jwt.sign(
       { id: user._id, isAdmin: user.role === "admin" },
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      }
     );
 
     res.status(200).json({

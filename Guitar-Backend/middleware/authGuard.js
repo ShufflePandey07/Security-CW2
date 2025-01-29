@@ -1,102 +1,3 @@
-// const jwt = require("jsonwebtoken");
-// const authGuard = (req, res, next) => {
-//   // check incoming data
-//   console.log(req.headers); //pass
-
-//   // get authorization data from headers
-//   const authHeader = req.headers.authorization;
-
-//   // check or validate
-//   if (!authHeader) {
-//     return res.status(400).json({
-//       success: false,
-//       message: "Auth header is missing",
-//     });
-//   }
-
-//   // Split the data (Format : 'Bearer token-joyboy') -> only token
-//   const token = authHeader.split(" ")[1];
-
-//   // if token is not found : stop the process (res)
-//   if (!token || token === "") {
-//     return res.status(400).json({
-//       success: false,
-//       message: "Please provide a token",
-//     });
-//   }
-
-//   // if token is found then verify
-//   try {
-//     const decodeUserData = jwt.verify(token, process.env.JWT_SECRET);
-//     req.user = decodeUserData; //user info : id onlyf
-//     next();
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(400).json({
-//       success: false,
-//       message: "Not Authenticated",
-//     });
-//   }
-
-//   // if verified : next (function in controller)
-//   // if not verified : not auth
-// };
-
-// // Admin guard
-// const adminGuard = (req, res, next) => {
-//   // check incoming data
-//   console.log(req.headers); //pass
-
-//   // get authorization data from headers
-//   const authHeader = req.headers.authorization;
-
-//   // check or validate
-//   if (!authHeader) {
-//     return res.status(400).json({
-//       success: false,
-//       message: "Auth header is missing",
-//     });
-//   }
-
-//   // Split the data (Format : 'Bearer token-joyboy') -> only token
-//   const token = authHeader.split(" ")[1];
-
-//   // if token is not found : stop the process (res)
-//   if (!token || token === "") {
-//     return res.status(400).json({
-//       success: false,
-//       message: "Please provide a token",
-//     });
-//   }
-
-//   // if token is found then verify
-//   try {
-//     const decodeUserData = jwt.verify(token, process.env.JWT_SECRET);
-//     req.user = decodeUserData; // id, isadmin
-//     if (!req.user.isAdmin) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Permission Denied",
-//       });
-//     }
-//     next();
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(400).json({
-//       success: false,
-//       message: "Not Authenticated",
-//     });
-//   }
-
-//   // if verified : next (function in controller)
-//   // if not verified : not auth
-// };
-
-// module.exports = {
-//   authGuard,
-//   adminGuard,
-// };
-
 const jwt = require("jsonwebtoken");
 
 // Utility function to validate token format
@@ -150,11 +51,7 @@ const authGuard = (req, res, next) => {
         success: false,
         message: "Token has expired",
       });
-    }/* The `if (error.name === "JsonWebTokenError")` condition in the code snippet is checking if the
-    error thrown during token verification is of type "JsonWebTokenError". This specific check is
-    used to handle cases where the error is related to issues with the JSON Web Token itself, such
-    as token format errors or invalid tokens. */
-    
+    }
 
     if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
