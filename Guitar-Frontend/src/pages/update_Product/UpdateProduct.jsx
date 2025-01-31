@@ -147,7 +147,7 @@ const UpdateProduct = () => {
               height={"200px"}
               width={"300px"}
               className="image-fluid rounded-4 object-fit-cover"
-              src={`http://localhost:5000/products/${oldImage}`}
+              src={`https://localhost:5000/products/${oldImage}`}
             />
 
             {previewNewImage && (

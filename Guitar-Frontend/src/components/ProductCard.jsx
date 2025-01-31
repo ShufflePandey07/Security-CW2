@@ -1,10 +1,10 @@
-import React, { useState } from "react";
 import {
   EyeOutlined,
   HeartOutlined,
   ShoppingCartOutlined,
 } from "@ant-design/icons";
 import { Button, Card, Form, Image, Input, Modal, Radio, Tooltip } from "antd";
+import React, { useState } from "react";
 import { toast } from "react-toastify";
 import styled from "styled-components";
 import { addToFavoriteApi } from "../Apis/api";
@@ -118,7 +118,7 @@ const ProductCard = ({ productInformation, viewMode, addToCart, cartItem }) => {
   const cardContent = (
     <>
       <ProductImage
-        src={`http://localhost:5000/products/${productInformation.productImage}`}
+        src={`https://localhost:5000/products/${productInformation.productImage}`}
         alt={productInformation.productName}
         preview={false}
         onClick={handleShow}
@@ -159,7 +159,7 @@ const ProductCard = ({ productInformation, viewMode, addToCart, cartItem }) => {
         <Card style={{ width: "100%", marginBottom: "16px" }}>
           <div style={{ display: "flex" }}>
             <ListViewProductImage
-              src={`http://localhost:5000/products/${productInformation.productImage}`}
+              src={`https://localhost:5000/products/${productInformation.productImage}`}
               alt={productInformation.productName}
               preview={false}
               onClick={handleShow}
@@ -210,7 +210,7 @@ const ProductCard = ({ productInformation, viewMode, addToCart, cartItem }) => {
         ]}
       >
         <Image
-          src={`http://localhost:5000/products/${productInformation.productImage}`}
+          src={`https://localhost:5000/products/${productInformation.productImage}`}
           alt={productInformation.productName}
           style={{ width: "100%", marginBottom: "16px" }}
         />
@@ -233,7 +233,7 @@ const ProductCard = ({ productInformation, viewMode, addToCart, cartItem }) => {
       >
         <div style={{ display: "flex", marginBottom: "16px" }}>
           <Image
-            src={`http://localhost:5000/products/${productInformation.productImage}`}
+            src={`https://localhost:5000/products/${productInformation.productImage}`}
             alt={productInformation.productName}
             style={{ width: "100px", height: "100px", marginRight: "16px" }}
           />

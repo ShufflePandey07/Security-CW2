@@ -152,7 +152,7 @@ const Homepage = () => {
             <CardMedia
               component="img"
               height="260"
-              image={`http://localhost:5000/products/${guitar.productImage}`}
+              image={`https://localhost:5000/products/${guitar.productImage}`}
               alt={guitar.productName}
               sx={{
                 cursor: "pointer",
@@ -351,7 +351,7 @@ const Homepage = () => {
           {selectedGadget && (
             <>
               <img
-                src={`http://localhost:5000/products/${selectedGadget.productImage}`}
+                src={`https://localhost:5000/products/${selectedGadget.productImage}`}
                 alt={selectedGadget.productName}
                 style={{
                   width: "100%",

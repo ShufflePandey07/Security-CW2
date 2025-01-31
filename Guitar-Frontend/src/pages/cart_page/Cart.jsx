@@ -125,7 +125,7 @@
 //     publicKey: "test_public_key_0800545e039d45368cab4d1b2fb93d01",
 //     productIdentity: "1234567890",
 //     productName: "Guitar Purchase",
-//     productUrl: "http://localhost:3000/cart",
+//     productUrl: "https://localhost:3000/cart",
 //     paymentPreference: [
 //       "KHALTI",
 //       "EBANKING",
@@ -242,7 +242,7 @@
 //                   <Grid item xs={12} sm={4}>
 //                     <Box
 //                       component="img"
-//                       src={`http://localhost:5000/products/${cart.productId.productImage}`}
+//                       src={`https://localhost:5000/products/${cart.productId.productImage}`}
 //                       alt={cart.productName}
 //                       sx={{
 //                         width: "100%",
@@ -522,7 +522,6 @@
 
 // export default Cart;
 
-import DOMPurify from "dompurify";
 import {
   Add,
   CreditCard,
@@ -552,6 +551,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
+import DOMPurify from "dompurify";
 import KhaltiCheckout from "khalti-checkout-web";
 import React, { useEffect, useState } from "react";
 import {
@@ -653,7 +653,7 @@ const Cart = () => {
     publicKey: "test_public_key_0800545e039d45368cab4d1b2fb93d01",
     productIdentity: "1234567890",
     productName: "Guitar Purchase",
-    productUrl: "http://localhost:3000/cart",
+    productUrl: "https://localhost:3000/cart",
     paymentPreference: [
       "KHALTI",
       "EBANKING",
@@ -777,7 +777,7 @@ const Cart = () => {
                   <Grid item xs={12} sm={4}>
                     <Box
                       component="img"
-                      src={`http://localhost:5000/products/${cart.productId.productImage}`}
+                      src={`https://localhost:5000/products/${cart.productId.productImage}`}
                       alt={cart.productName}
                       sx={{
                         width: "100%",
